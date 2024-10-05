@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Resource Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.0.2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+        }
+        .buttons {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            width: 600px;
+            height: 400px;
+        }
+        .alert {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none; /* Hidden initially */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Docker Resource Monitor</h1>
+        <div class="buttons">
+            <button onclick="startGenerating()">Start Memory Consumer</button>
+            <button onclick="stopGenerating()">Stop Memory Consumer</button>
+        </div>
+        <div class="chart-container">
+            <canvas id="randomChart"></canvas>
+        </div>
+        <div id="alertMessage" class="alert">
+            Limit reached either stop the instance or change the limit
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let intervalId;
+        let alertTriggered = false; // Flag to track if the alert has been triggered
+        const maxDataPoints = 20;
+
+        function initChart() {
+            const ctx = document.getElementById('randomChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Resource Usage',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 7,
+                                    yMax: 7,
+                                    xMin: 0,
+                                    xMax: maxDataPoints, // Span the full x-axis
+                                    borderColor: 'red',
+                                    borderWidth: 2,
+                                    label: {
+                                        enabled: true,
+                                        position: 'end'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(randomNumber) {
+            const now = new Date();
+            chart.data.labels.push(now.toLocaleTimeString());
+            chart.data.datasets[0].data.push(randomNumber);
+
+            if (chart.data.labels.length > maxDataPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update();
+
+            // Display alert if randomNumber is 7 or above and keep it permanently until stopped
+            if (randomNumber >= 7) {
+                alertTriggered = true;  // Set alert flag
+            }
+
+            if (alertTriggered) {
+                document.getElementById("alertMessage").style.display = "block";
+            }
+        }
+
+        function generateRandomNumber() {
+            const randomNumber = Math.floor(Math.random() * 10) + 1;  // Generate random number between 1 and 10
+            updateChart(randomNumber);
+        }
+
+        function startGenerating() {
+            if (!intervalId) {
+                intervalId = setInterval(generateRandomNumber, 1000);  // Generate random numbers every 1 second
+            }
+        }
+
+        function stopGenerating() {
+            clearInterval(intervalId);
+            intervalId = null;
+            alertTriggered = false;  // Reset alert flag
+            document.getElementById("alertMessage").style.display = "none";  // Hide the alert
+        }
+
+        initChart();
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - FLASK_ENV=development
+  
+  memory_consumer:
+    image: alpine
+    command: sh -c "while true; do dd if=/dev/zero of=/dev/null bs=1M count=1024; sleep 1; done"

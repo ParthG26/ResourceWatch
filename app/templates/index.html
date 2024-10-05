@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Resource Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Docker Resource Monitor</h1>
+        <div class="buttons">
+            <button onclick="checkResources()">Check Resource Usage</button>
+            <button onclick="startMemoryConsumer()">Start Memory Consumer</button>
+            <button onclick="stopMemoryConsumer()">Stop Memory Consumer</button>
+        </div>
+        <div class="chart-container">
+            <canvas id="resourceChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        const maxDataPoints = 20;
+
+        function initChart() {
+            const ctx = document.getElementById('resourceChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CPU Usage (%)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }, {
+                        label: 'Memory Usage (MB)',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(cpu, memory) {
+            const now = new Date();
+            chart.data.labels.push(now.toLocaleTimeString());
+            chart.data.datasets[0].data.push(cpu);
+            chart.data.datasets[1].data.push(memory);
+
+            if (chart.data.labels.length > maxDataPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+            }
+
+            chart.update();
+        }
+
+        function checkResources() {
+            fetch('/check_resources')
+                .then(response => response.json())
+                .then(data => {
+                    updateChart(data.cpu_usage, data.memory_usage);
+                });
+        }
+
+        function startMemoryConsumer() {
+            fetch('/start_consumer')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.status);
+                });
+        }
+
+        function stopMemoryConsumer() {
+            fetch('/stop_consumer')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.status);
+                });
+        }
+
+        initChart();
+        setInterval(checkResources, 2000);  // Update every 2 seconds
+    </script>
+</body>
+</html>
